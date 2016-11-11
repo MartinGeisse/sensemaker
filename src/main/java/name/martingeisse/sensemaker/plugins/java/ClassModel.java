@@ -2,6 +2,8 @@ package name.martingeisse.sensemaker.plugins.java;
 
 import org.objectweb.asm.tree.ClassNode;
 
+import java.util.List;
+
 /**
  *
  */
@@ -51,6 +53,19 @@ public final class ClassModel {
 	 */
 	public ClassNode getAsmClassNode() {
 		return asmClassNode;
+	}
+
+	public ClassModelKey getSuperclassKey() {
+		return new ClassModelKey(asmClassNode.superName);
+	}
+
+	public ClassModelKey[] getInterfaceKeys() {
+		List<String> interfaceNames = asmClassNode.interfaces;
+		ClassModelKey[] result = new ClassModelKey[interfaceNames.size()];
+		for (int i=0; i<result.length; i++) {
+			result[i] = new ClassModelKey(interfaceNames.get(i));
+		}
+		return result;
 	}
 
 }

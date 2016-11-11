@@ -18,14 +18,14 @@ import java.util.List;
 /**
  *
  */
-public class ClassModelProvider implements ItemProvider {
+public class JavaProvider implements ItemProvider {
 
 	private static final String CLASS_FILE_NAME_SUFFIX = ".class";
 
 	private final Database database;
 
 	@Inject
-	public ClassModelProvider(Database database) {
+	public JavaProvider(Database database) {
 		this.database = database;
 	}
 
@@ -35,6 +35,8 @@ public class ClassModelProvider implements ItemProvider {
 			return (T)getClassModel((ClassModelKey)key);
 		} else if (key instanceof AllClassModelsKey) {
 			return (T)getAllClassModels();
+		} else if (key instanceof TypeHierarchyKey) {
+			return (T)getSubtypes((TypeHierarchyKey)key);
 		}
 		return null;
 	}
@@ -78,6 +80,12 @@ public class ClassModelProvider implements ItemProvider {
 			new ClassReader(inputStream).accept(classNode, 0);
 		}
 		return new ClassModel(packageName, simpleName, classNode);
+	}
+
+	private List<String> getSubtypes(TypeHierarchyKey key) {
+		List<ClassModel> allClassModels = database.get(new AllClassModelsKey());
+
+
 	}
 
 }
