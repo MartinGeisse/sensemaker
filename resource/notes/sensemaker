@@ -1,0 +1,126 @@
+
+Der Sensemaker liest Code ein, baut daraus eine Datenbank / Code-Modell auf, und beantwortet dann Fragen. 
+
+Plugins erweitern den SM um Fähigkeiten. E/EP-System wie gehabt.
+
+Fragen vs. Sinn: hier geht es um eine Formalität. Auch wenn Formal immer eine Frage gestellt werden muss, damit der SM reagiert, kann diese Frage ja auch sein: "Was ist der Sinn dieses Programms?" Die Details sind demnach den Plugins überlassen.
+
+Zentraler Bestandteil wird eine Wissensdatenbank sein -- im Grunde eine lazy gefüllte key/value map. Entsprechende Provider werden registriert, und dann kann aufgrund eines Keys ein Objekt abgefragt werden. (Der Key ist am besten mit dessen Typ parametrisiert). Ist das Objekt nicht da, wird der entsprechende Provider benutzt, um es zu erzeugen, was wiederum auf die Wissensdatenbank zugreifen kann. Idee: Die ursprünglichen Benutzerfragen können auch darüber abgebildet werden. Im Prinzip kann nach jedem Objekt gefragt werden (bzw. nach jedem Objekt, für das ein Renderer existiert, um es dem Benutzer darzustellen).
+
+Initialer Inhalt der Wissensdatenbank ist der Code, bzw. sogar nur die Angabe, wo dieser zu finden ist. (Dann muss aber davon ausgegangen werden, dass er sich nicht mittendrin ändert).
+
+Auch Requests an die Wissensdatenbank sollten renderable sein: Wenn ein Request nicht beantwortet werden kann, dann sollte dieser ausgegeben werden, damit der Benutzer ihn ggf. beantworten kann.
+
+Evtl. sind nicht nur Anfragen an den Code, sondern auch an eine Datenbank nötig -- vor allem, wenn Code in der DB liegt; aber auch z.B. der Struktur, oder ob bestimmte Situationen vorkommen.
+
+Der SM sollte Annahmen ausgeben. Z.B.: In der DB liegen keine Datensätze mit is_old=0, also treffe ich die Annahme, dass dieser Fall insgesamt nicht vorkommen kann.
+
+------------------------------------
+
+Große Frage ist: Soll der SM von Source Code oder von Class Files ausgehen?
+- Wenn Source Files: Dann muss im Prinzip ein Compiler Teil des SM sein
+- Wenn Class Files: Dann setzt das voraus, dass der Code überhaupt compilebar ist
+- Wenn beides angegeben wird, können die beiden inkonsistent sein
+- bei Scriptsprachen kann die Unterscheidung nicht gemacht werden
+- Class Files müssten von daher sowieso gehen, weil Bibliotheken so vorliegen
+-->
+Am schönsten wäre es im Grunde, wenn man dem SM alles geben könnte, was man hat, und er das Maximum herausholt. Wenn beides da ist und inkonsistent, dann soll er das melden.
+
+
+Was sind denn Fragen an den Code? Die meisten Fragen sind realistisch doch eher: "ich versteh hier nix, was ist denn hier was?"
+--> Also die Fragen nach Übersicht. 
+--> Diese Frage kann davon ausgehen, dass es keinen unbenutzten Code gibt. (Ansonsten kann wie unten geklärt werden, was unbenutzt ist, und dieser soft (separate Löschtabelle) oder hard gelöscht werden)
+Was sind Antworten auf die Frage nach Orientierung?
+- Klassen und Methoden werden mit Tags versehen:
+	- Klassen
+		- Reines Datenobjekt
+			- mit equals / hashcode support
+			- mit kaputtem equals- oder hashcode-support
+		- toString support
+		- immutable
+	- Methoden
+		- Getter
+		- Setter
+		- Nop-op
+		- virtual, final, effectively final (wird nirgendwo überschrieben --> benötigt das Wissen darüber, ob der Code vollständig vorliegt)
+		- NOP
+
+
+Eine weitere Frage ist die nach unbenutztem Code. Die lässt sich beantworten:
+- welche Klassen werden nicht statisch benutzt?
+- welche Methoden werden nicht statisch benutzt?
+- wo finden dynamische Verwendungen statt? Welche davon können durch Programmanalyse "verstatischt" oder zumindest statisch eingegrenzt werden?
+
+
+Weitere Fragen sind die nach dem Verhalten einzelner Codestücke:
+- wie verhält sich f(x=5)? Wie verhält sich f(x<5)? Wie wenn static int foo = 42?
+- Unter welchen Bedingungen fliegt gleich eine IllegalArgumentException oder NPE?
+- Allgemeiner: Was sind die "Grenzen", wo sich das Verhalten radikal ändert? Im Prinzip werden hier die verschachtelten ifs "flachgedrückt", durch die
+	vorhergehenden Befehle "durchgedrückt" und aus deren Bedingungen eine Partition der Funktionsparameter gebaut.
+
+Weitere:
+- copy & paste code, auch mit Unterschieden
+- toter Code
+- abhängigkeiten
+- "high-level-Architektur" <-- muss klarer definiert werden
+- NICHT: Coding-Richtlinien, insbesondere die oberflächlichen (Formatierung, Naming, cyclo-complexity, ...). Dafür ist Sonarqube da.
+- EVTL: Sicherheitslücken. Auch dafür ist eigentlich Sonarqube da. Der Übergang ist aber fließend.
+- Implementierung in einer low-level-Sprache (z.B. Java -> Native, auch Assembler und Embedded-Kram)
+- Suche nach Race Conditions
+- Was-wäre-wenn (näher zu definieren)
+- disassembling
+- "ganzheitliche Problemsuche" inkl. DB-Daten, Konfiguration etc., was alles nicht Teil des Codes ist; außerdem soll es in der Lage sein, ein vorhandenes
+	Projekt zu analysieren, wo auch evtl. ein komplizierter Build stattfindet. Andere Tools kommen nicht damit klar, wenn sie den Build nicht verstehen.
+- Refactoring-Vorschläge (idealerweise so automatisiert, dass man diese nur noch per Knopfdruck bestätigen muss. Das braucht aber ggf. gute Integration in IDEs, oder
+	es muss selbst Refactoring-Wissen haben. Als eine 80%-Lösung reicht es aber, die Vorschläge zu machen.)
+- ideal wäre die Möglichkeit, Code zu analysieren, der nicht compiled
+- unklar: Analyse zur Laufzeit. Das kann helfen, kann aber auch total irreführend sein.
+- Abhängigkeiten vom Compiler etc. finden (geht aber auch eher in den Sonarqube-Bereich rein)
+- Erkennung von Patterns (Class Patterns wie Visitor; Architecture Patterns wie MVC)
+- Erkennung von "Projekttypen" (z.B. anhand Frameworks) und Hinweis auf Regeln, die in diesem Projekttyp gelten)
+	-> Beispiel-Frage: "was ist in welchem Ordner?"
+	-> Antwort: "Dies ist ein CakePHP 2 Projekt. Im Ordner "src" liegt der Quellcode; in "lib" liegt CakePHP selbst; in src/controller sind die Controller-Klassen (Link auf Doku); ..."
+- Welche möglichen "Pfade" gibt es (Methodenübergreifend) durch den Code?
+- Erkläre folgenden Regex (in Regex-Dialekt XYZ): ...
+- Welche Exceptions können hier fliegen (also wirklich, nicht nur Herumgerate)
+- Welche "Effekte" kann ein System haben?
+	-> wohin können Netzwerkverbindungen aufgemacht werden? Wohin werden HTTP-Requests gesendet?
+	-> auf welche lokalen Dateien wird zugegriffen?
+
+Andere Wichtige Features:
+- hier entsteht eine Unmenge an Information. Es ist wichtig, diese nicht nur strukturiert darzustellen, sondern auch leicht navigierbar zu machen! Also braucht es einen "Browser" für das Ergebnis, welcher dann auch mit einem Code-Browser einhergeht. Integration in eine IDE wäre cool; webbasierte Darstellung eine Alternative, wo man nicht von ewig vielen Tools abhängig ist, aber dann braucht es natürlich einen Syntax Highlighter (-> CodeMirror!). Beispiele:
+	- Klick auf eine Methode: "Zeige mir, wie diese Methode ablaufen kann!"
+		- Split nach Parametern / external State (falls größtenteils gleich, diesen Split "nach innen" verschieben)
+		- dabei müssten Varianten ausgeschlossen werden, die nach Analyse von anderem Code "nicht vorkommen können"
+			-> Invarianten! Z.B.
+				"Bei einem fertig erzeugten Objekt der Klasse X ist das feld F niemals null und niemals der Leerstring"
+				"Ein Objekt der Klasse K ist niemals Teil einer zyklischen Datenstruktur" (Interna der Standardbibliothek ausgenommen,
+					soll heißen Object-Class-Reference wird ignoriert; String gilt als Leaf; ...
+				"Ein Objekt der Klasse K bildet immer mit einem Objekt der Klasse A eine zyklische Struktur"
+		- jeweils die Abfolge von Befehlen; bei Methodenaufrufen, in welche Methode das reinführen kann (wenn nur 1 möglich, dann Hinweis und warum)
+		- dabei Sonderbehandlung von Standardmethoden (z.B. Klasse String), wobei diese auf Wunsch abgeschaltet werden kann
+- Plugins sollten automatisch nachgeladen werden, oder zumindest der Vorschlag gemacht werden. Dadurch kann viel spezifisches Wissen verfügbar gemacht werden,
+	z.B. über bestimmte Frameworks und Bibliotheken.
+	Sicherheitsbedenken werden dabei aufkommen. Dazu wird erst mal viel Review stattfinden müssen, d.h. nur im Sourcecode submittet. Idealerweise kann man
+	später aber genau über dieses Tool die Plugins untersuchen, ob sie irgendwas schädliches tun!
+
+Prestige-Beispiele:
+- vollständige Dokumentation des Linux-Kernel-Codes
+- disassembling eines bekannten Projekts (z.B. Doom oder Quake; Im Java-Umfeld sowas wie Elasticsearch, Eclipse, Tomcat, Minecraft)
+	-> hier könnte man z.B. sagen: Wir würden gerne Minecraft disassemblen, aber die rechtliche Siutation ist uns zu heikel. Und dann das Programm so
+		vorbereiten, dass Minecraft nirgendwo verlinkt ist, aber wenn man den Link einträgt, out of the box komplett analysiert werden kann.
+
+------------------------------------
+
+v1:
+- nur ein classloader
+- geht davon aus, dass aller code schon compiled wurde
+--> das sind alles nur "v1-Annahmen" !!!
+
+Wie kann das Analysieren überhaupt gehen?
+-> Modell der Klassenhierarchie, Methoden, Felder
+	Das kann direkt aus den Classfiles aufgebaut werden.
+	Erst mal nur auf Java abzielen. Das kann später gut erweitert werden.
+-> Kontrollflussanalyse -> entweder ein CFG oder SSA-Pseudo-Assembler wie bei LLVM
+	(ist ein CFG auch SSA? möglicherweise wäre das dann die sinnvollste Variante)
+

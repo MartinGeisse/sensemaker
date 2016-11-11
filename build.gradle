@@ -36,4 +36,7 @@ dependencies {
 	// JSON
 	compile 'com.google.code.gson:gson:2.3'
 
+	// ASM class file parser
+	compile 'org.ow2.asm:asm-all:5.1'
+
 }

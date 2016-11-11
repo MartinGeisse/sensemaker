@@ -6,4 +6,15 @@ import name.martingeisse.sensemaker.core.ItemKey;
  *
  */
 public final class FileStatisticsKey implements ItemKey {
+
+	@Override
+	public boolean equals(Object obj) {
+		return obj instanceof FileStatisticsKey;
+	}
+
+	@Override
+	public int hashCode() {
+		return getClass().hashCode();
+	}
+
 }

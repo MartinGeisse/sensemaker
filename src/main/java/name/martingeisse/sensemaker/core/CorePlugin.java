@@ -10,10 +10,7 @@ public final class CorePlugin extends Plugin {
 
 	@Override
 	protected void configure() {
-
 		defineExtensionPoint(ItemProvider.class);
-		extend(ItemProvider.class, FileStatisticsProvider.class);
-
 		bind(Database.class).to(SimpleDatabase.class).in(Singleton.class);
 	}
 
