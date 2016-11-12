@@ -35,8 +35,6 @@ public class JavaProvider implements ItemProvider {
 			return (T)getClassModel((ClassModelKey)key);
 		} else if (key instanceof AllClassModelsKey) {
 			return (T)getAllClassModels();
-		} else if (key instanceof TypeHierarchyKey) {
-			return (T)getSubtypes((TypeHierarchyKey)key);
 		}
 		return null;
 	}
@@ -80,12 +78,6 @@ public class JavaProvider implements ItemProvider {
 			new ClassReader(inputStream).accept(classNode, 0);
 		}
 		return new ClassModel(packageName, simpleName, classNode);
-	}
-
-	private List<String> getSubtypes(TypeHierarchyKey key) {
-		List<ClassModel> allClassModels = database.get(new AllClassModelsKey());
-
-
 	}
 
 }

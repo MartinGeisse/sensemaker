@@ -1,5 +1,6 @@
 package name.martingeisse.sensemaker.plugins.java;
 
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.objectweb.asm.tree.ClassNode;
 
 import java.util.List;
@@ -17,6 +18,16 @@ public final class ClassModel {
 		this.packageName = packageName;
 		this.simpleName = simpleName;
 		this.asmClassNode = asmClassNode;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		return (obj instanceof ClassModel) && ((ClassModel) obj).packageName.equals(packageName) && ((ClassModel) obj).simpleName.equals(simpleName);
+	}
+
+	@Override
+	public int hashCode() {
+		return new HashCodeBuilder().append(packageName).append(simpleName).toHashCode();
 	}
 
 	/**
@@ -62,7 +73,7 @@ public final class ClassModel {
 	public ClassModelKey[] getInterfaceKeys() {
 		List<String> interfaceNames = asmClassNode.interfaces;
 		ClassModelKey[] result = new ClassModelKey[interfaceNames.size()];
-		for (int i=0; i<result.length; i++) {
+		for (int i = 0; i < result.length; i++) {
 			result[i] = new ClassModelKey(interfaceNames.get(i));
 		}
 		return result;
