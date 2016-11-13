@@ -124,3 +124,48 @@ Wie kann das Analysieren überhaupt gehen?
 -> Kontrollflussanalyse -> entweder ein CFG oder SSA-Pseudo-Assembler wie bei LLVM
 	(ist ein CFG auch SSA? möglicherweise wäre das dann die sinnvollste Variante)
 
+------------------------------------
+
+Das Frage-Antwort-Memoize-Prinzip ist schwach! Sinnvoller wäre ein "Erkenntnis-Sammel-Prinzip", weil es darauf setzt, dass eine Erkenntnis zu einer neuen führen kann. Frage-Antwort wäre sinnvoll,
+wenn klarer wäre, woher die Antwort kommt.
+
+Also: Jede Erkenntnis kann zu einer neuen führen, und die wieder zu einer neuen. Das klingt nach Event Listener:
+- es gibt eine zentrale listener registry
+- die root-information (z.B. Ordner, VCS-URL) ist eine Erkenntnis
+- jede Erkenntnis wird an alle Listener gesendet
+- das passiert aber nur einmal. Die Registry merkt sich jede gesendete Erkenntnis und sendet sie nicht nochmal
+- am Ende kann man das Ergebnis ggf. durch eine Frage filtern. Dieser Teil ist noch unklar, aber das wird offensichtlich, wenn bekannt ist, welche Erkenntnisse sich da so anhäufen
+
+Beispiele:
+- ClassFile-Ordner -> ClassModels
+- ClassModels -> verwendete Frameworks
+- ClassModels -> wo wird überall Reflection verwendet
+- ClassModels -> Main-Klassen
+- wo Reflection -> wo werden beliebige Konstruktoren aufgerufen
+- wo Reflection -> wo wird auf Private Fields zugegriffen
+- ClassModels, wo wird auf Private Fields zugegriffen --> wird auf beliebige Private Fields zugegriffen?
+- ClassModels, Main-Klassen -> Command-Line Parameters
+
+Dieses Prinzip lässt sich auch sehr einfach um beliebiges Wissen aus Plugins erweitern.
+
+---
+
+So ganz ist es das aber noch nicht. Für diverse Erkenntnisse gibt es verschiedene "Versionen" -- erst kommt eine einfache Version, später eine verbesserte (die sich unterscheiden kann),
+und evtl. auch wegen einer Art "Race Condition" (Reihenfolge der Listener-Aufrufe; kann auch tatsächlich in Threads passieren) kann eine Erkenntnis "verspätet" kommen und dadurch schlechter
+sein, als eine frühere Erkenntnis derselben Art. Dazu muss jede Erkenntnis erst mal genau dokumentieren, wie sie zustande gekommen ist -- dann kann jeder potentielle Consumer zumindest alle
+Erkenntnisse mergen. Wenn es bei einer Art von Erkenntnis eine klare Rangfolge gibt (besser vs. schlechter), dann kann diese ja über Methoden abrufbar sein, was es für Consumer einfacher macht.
+
+Trotzdem ist die Frage, was davon im Basis-System abgebildet wird. Gibt es eine Art "Key" für Erkenntnisse, so dass zwei Erkenntnis-Objekt mit demselben "Key" immer zwei Versionen darstellen,
+wo nur eine richtig sein kann (aber evtl. keine der präsentierten)? Wenn jedes Erkenntnis-Objekt dokumentiert, wie es zustande gekommen ist, dann ist jedes davon richtig; sie beantworten verschiedene
+Fragen. Wenn man das aber auf die Spitze treibt, dann ist es nicht viel hilfreicher als eine Frage-Antwort-Engine. Etwas besseres bekommt man zumindest, wenn die Erkenntnis-Objekt interfaces
+implementieren, wodurch ein Consumer alle Erkenntnisse mit bestimmten Interfaces verarbeiten kann. Dann muss immer noch entschieden werden, welches "richtiger" ist.
+
+Ein konkretes Beispiel: Wo wird eine Klasse instanziiert?
+- alle Aufrufe des Constructors
+- alle Reflection-Verwendungen
+- Reflection-Verwendungen gefiltert aufgrund von anderen Erkenntnissen
+
+
+
+
+

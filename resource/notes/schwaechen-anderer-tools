@@ -1,0 +1,21 @@
+
+Was sind die Schwächen anderer Tools, insbes. Statischer-Code-Analyse-Tools? Wie kann der Sensemaker das besser machen?
+
+1. Diese Tools haben Wissen über die Sprache, aber nicht über Frameworks und nicht über "hauseigene Frameworks" (letzteres passiert sehr oft).
+	Damit kann man an vielen Stellen nur Vielleichts und Wenns und Abers anbieten. Beispiel: Diese Klasse wird in Package A nicht instanziiert...
+	außer es passiert über Reflection. Damit ist dann immer noch alles offen, weil viele Frameworks viel Reflection-Magic machen.
+	-->
+	Hier muss in mehreren Runden das fehlende Wissen nachgeholt werden:
+	- Wenn bekannte Frameworks unverändert benutzt werden, dann kann das Wissen aus einer globalen DB im Internet geholt werden. (-> Plugin Store)
+	- Reflection, die nichts damit zu tun hat, kann ignoriert werden (z.B. ohne Instanziierung -- Zugriff auf private Felder bsp.)
+		- letztere muss aber an vielen Stellen Sonderlogik triggern
+	- hauseigene Frameworks können in mehreren Runden selbst analysiert und das Wissen niedergeschrieben und ins VCS eingecheckt werden. Hier wirds interaktiv,
+		was zwar cool ist, aber ohne Interaktion wär es noch cooler.
+	-->
+	************************
+	Das Nonplusultra wäre aber, ohne festes Wissen über vorhandene Frameworks (aber mit "inspirierten Heuristiken") eine Analyse über den gesamten Code (hauseigen
+	und 3rdparty, evtl. sogar Java-Standard-Lib) und damit auch alle Vorkommnisse von Reflection zu fahren, und zwar ohne dass Interaktion nötig ist.
+	************************
+	Hier ist doch mal eine konkrete Zielvorstellung da, die auch funktionieren würde -- auch wenn sie sehr aufwändig ist. Trotzdem ist das die Variante, wo man
+	nicht ständig nachbessern muss. Das Wissen über bekannte Bibliotheken ist dann in Heuristiken niedergeschrieben, die aber eben nur solche sind -- und damit
+	auch bemerken, wenn Code eines 3rdparty-Frameworks geändert wurde oder in der neueten Version sich anders verhält.
