@@ -165,7 +165,47 @@ Ein konkretes Beispiel: Wo wird eine Klasse instanziiert?
 - alle Reflection-Verwendungen
 - Reflection-Verwendungen gefiltert aufgrund von anderen Erkenntnissen
 
+Ein Ansatz aus dem manuellen Vorgehen wäre es, eine Widerspruchs-Erkennung zu benutzen. Dann müsste nachfolgend der
+Widerspruch aufgelöst werden -> "was stimmt denn jetzt?" Danach würde dann eine der Aussagen ungültig, alle
+Schlußfolgerungen auch, was evtl. die konkurrierende Aussage *auch* ungültig macht und man hat gar nichts mehr. Dabei
+wäre es eigentlich richtig, zu erkennen, dass in der Kette irgendwo die Aussagen *doch* gültig werden, nur mit
+anderer Begründung -- was man aber noch schwerer erkennen kann. Das führt so zu nichts.
 
+Besser ist da schon der Ansatz mit Interfaces, so dass verschiedene Grundlagen auf dieselbe Art zu einer Schlußfolgerung
+führen können. Z.B. kann die Liste der direkten Konstrukturaufrufe genauso wie die Liste von Reflection-Konstruktoraufrufen
+zu einer Liste von instanziierten konkreten Klassen führen. Beide "wissen", dass sie nicht exklusiv sind, aber beide
+können auf dieselbe Art verwendet werden --> Interface! Zusammen mit Annahmen (keine Konstruktoraufrufe aus
+Native Code heraus -> das sollte ein Default, aber explizit und sichtbar sein) wird daraus eine Abschließende Liste von
+instanziierten Klassen.
 
+Wo sind die Vorteile zu Anfrage-Antwort? Die Interfaces sind ein Vorteil, aber das alleine ist noch zu schwach. Wichtig
+wäre es, dieselbe Erkenntnis auf verschiedenen Wegen finden zu können. Das Hauptproblem scheint dabei zu sein, dass man
+für eine brauchbare Erkenntnis eine "beidseitige" Aussage braucht: Also bei den Konstruktoraufrufen eine Liste ohne
+falsche Elemente und ohne fehlende Elemente. Die lässt sich schlecht einseitig durch Plugins erweitern.
 
+Weiter gedacht ist das Problem, dass man eine definitive Aussage will, aber auf der Basis von "mitwirkenden" Plugins.
+Zu allererst ist mal zu klären, ob diese Wunschvorstellung überhaupt realistisch / sinnvoll ist. Ich will es nicht
+von vornherein ausschließen: Die Beweisführung muss nach allen Seiten hin hieb- und stichfest sein, aber der Weg, auf
+dem die Beweisführung gefunden wird, kann beliebig schwammig sein.
+-->
+Wenn man das weiterdenkt, wird langsam klar, wie die Wunschvorstellung konkret aussieht: so etwas ähnliches wie Verifun,
+aber für prozedurale Sprachen und mit Heuristiken, welche die zu beweisenden Aussagen automatisch generieren.
+-->
+Nach nochmaligem drüber Nachdenken kann ich das nur bestätigen. Schwammige Aussagen über den Code kann man in mehreren
+Stufen auch selbst treffen -- die sind aber selten viel Wert, weil man bei "interessantem" Code fast immer merkt, dass es
+doch ganz anders ist. Wasserdichte Aussagen sind das wirklich wertvolle:
+- als Ausgangspunkt sollte für die meisten Aussagen klar sein, welcher Code (maximal) verwendet wird. Eine solche Obergrenze lässt sich aber fast immer
+	finden, notfalls mit Zwischenschritten. Meistens ist es eine Kombination aus Basiscode, Plugins von irgendwoher und Code aus der Datenbank.
+	Erst wenn Downloads von beliebigen Quellen erlaubt sind, wird es haarig. Das passiert aber nicht sehr oft.
+- Damit sind dann Obergrenzen bekannt, welche Klassen es gibt -- und damit auch mögliche Implementierungen für jede Methode.
+	--> Idee: Hier kann im schlimmsten Fall herauskommen, dass doch Code von woandersher kommt (z.B.: es war in der ersten
+		Runde nicht bekannt, dass Code in der DB liegt). In diesem Fall wäre es die einfachste Lösung, dass die Engine sich
+		gar nicht wieder "erholen" kann, sondern mit dem Widerspruch diese Runde abgebrochen wird. Dann muss der Benutzer
+		die Annahmen anpassen (z.B. Datenbankzugang herstellen) und das Tool neu starten. 
+	--> Im schlimmsten Fall kann ein übergeordnetes Tool das tun.
+- Auf dieser Grundlage kann dann evtl. Stück für Stück erkannt werden, welche von diesen Klassen wirklich verwendet werden.
+	Beispiel:
+	- bekannte Frameworks, die Reflection einsetzen, und wie diese sich verhalten (z.B. Wissen darüber, wie Spring-XML-Dateien funktionieren)
+	- Klassen, deren Konstrukturen nicht zu der Art und Weise passen, wie Konstrukturen per Reflection aufgerufen werden (Anzahl und Typ der Parameter)
+	- Reflection-verwendender Code, der niemals ausgeführt wird
 
