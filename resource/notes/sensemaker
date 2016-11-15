@@ -209,3 +209,118 @@ doch ganz anders ist. Wasserdichte Aussagen sind das wirklich wertvolle:
 	- Klassen, deren Konstrukturen nicht zu der Art und Weise passen, wie Konstrukturen per Reflection aufgerufen werden (Anzahl und Typ der Parameter)
 	- Reflection-verwendender Code, der niemals ausgeführt wird
 
+Um nochmal zu wiederholen, was der Unterschied zu request-response ist:
+- Eine Erkenntnis kann verwertet werden, ohne dass bekannt ist, wie sie zustandegekommen ist. Bei request-response müsste man aufgrund der Frage
+	wissen, wie man zu einer Antwort kommt. Das heißt, RR müsste mit Response-Contributoren arbeiten, um dasselbe zu erreichen. Auf diesem Weg wäre
+	RR vermutlich auch gleichwertig, und es stellt sich schon die Frage, ob das nicht sinnvoller wäre.
+	--> Das gibt es das "Keine-Zyklen-Problem": RR kann nicht in mehreren Zyklen eine immer bessere Version einer Antwort finden. Es würde sich dabei
+		in einer Endlosschleife verfangen. Listeners dagegen haben zwar das Problem, die Versionen als verschiedene Aussagen zu taggen, können diese
+		aber anhäufen und dabei verbessern.
+- RR ist zielgerichtet, Listeners sind ein "Shotgun-Ansatz". Aber genau dieser ermöglicht die schrittweise Verbesserung. Wohlgemerkt: Der Vorteil ist NICHT,
+	dass man auch auf Umwegen zum Ziel kommt -- das kann auch RR (auch wenn es dabei einen Teil der Zielgerichtetheit verliert). Der Vorteil ist, dass auf
+	dieselbe Fragen schrittweise immer bessere Antworten gegeben werden können, und das kann RR nicht.
+
+Der Listener-Ansatz wäre also:
+- Jede Erkenntnis ist korrekt und verliert niemals an Gültigkeit. Maximal kann sie von einer neueren Erkenntnis subsummiert werden und könnte dann aus
+	Performancegründen verworfen werden -- das Ergebnis wird aber nicht verfälscht, wenn man sie behält.
+- Demnach gibt es auch keine Versionen, keine Keys für die Erkenntnisse etc.
+- Eine Gleichheit unter Erkenntnissen muss definiert werden, wenn ansonsten eine Erkenntnis in einer Kette von Schlußfolgerungen zu sich selbst führt.
+	Dann muss aufgrund der Gleichheit dieses erkannt werden und nicht an die Listener weitergegeben, um eine Endlosschleife zu vermeiden.
+	-> equals / hashCode überschreiben, wenn diese Gefahr besteht, ansonsten ist das nicht nötig. Dann gilt Gleichheit aufgrund Objektidentität.
+
+Überlegung, wie man mit Problemen umgeht wie z.B. welche Ordner/JARs zum Classpath gehören, auch abschließend:
+- man kann natürlich in jede Schlußfolgerung die Annahmen integrieren. Das bläht es aber ganz schön auf. Ist die Frage, ob man diese "Erkenntnisse", die
+	ja alle als wenn-dann formuliert sind, noch gut verarbeiten kann.
+- ansonsten kann man auch Annahmen als "global" speichern und muss dann ggf. diese verwerfen und neu anfangen. Das klingt schon besser, erhöht aber
+	natürlich auch die Laufzeit.
+- weitere Idee: Man speichert nicht die Annahmen als Datenfelder in den Erkenntnissen, sondern verlinkt frühere Erkenntnisse. Die Erkenntnisse sind dann
+	ein potentiell unbegrenzt wachsender Baum aus Erkenntnis-Knoten, deren Vorgänger jeweils die Annahmen und früheren Erkenntnisse und deren Nachfolger
+	die daraus abgeleiteten Schlußfolgerungen sind. "Vorgänger" und "Nachfolger" hier zeitlich; Objektgraph-mäßig verlinkt jeder Knoten auf seine
+	Vorgänger, d.h. die Objektreferenzen laufen in die Gegenrichtung.
+	-
+	Dann wäre das Grundprinzip nicht "Listener" sondern "Pattern Matching": Es wird jeweils ein Pattern gemacht und daraus ein neuer Knoten erzeugt.
+	-
+	Wesentlicher Unterschied: Die Pattern-Matcher dürfen im Gegensatz zu den Listenern nicht stateful sein, weil sie auch mal spekulativ auf unbestätigte
+	Vermutungen losgelassen werden.
+	-
+	Die Wurzelknoten sind die grundsäzlichen Annahmen, z.B. Angaben über den Classpath bzw. über Root-Ordner. Wenn man eine Annahme hinzufügt, ist das
+	eine neue Wurzel; wenn man eine Annahme wieder wegnimmt, verschwinden alle dessen Nachfolger wieder. Deshalb ist es wünschenswert, dass jede
+	Schlußfolgerung nur diejenigen Knoten als Vorgänger verlinkt, die auch wirklich nötig waren. Das ist aber nur eine Performancefrage; auf keinen
+	Fall darf ein verwendeter Vorgänger nicht verlinkt werden! Und "verwendet" heißt schon: ein einzelnes "if" über dessen Existenz. Von daher
+	überlässt man das am besten gar nicht dem Schlußfolgerungscode sondern dem Pattern Matcher. Sonderfälle wie z.B. "Knoten B wird nur verwendet,
+	wenn das Feld 'foo' in Knoten A auf true steht" -> kann man in den Pattern Matcher einbauen, indem dieser mit Objekten konfiguriert wird. Das
+	ist besser, als zu riskieren, dass Vorgängerknoten fehlen.
+	-
+	In einem endgültigen Ergebnis kann dann jede Schlußfolgerung mit den nötigen Annahmen gelistet werden. Nötige Annahmen sind alle (direkten und
+	indirekten) Vorgänger-Wurzelknoten. Der Benutzer kann dann z.B. diese pinnen (falls es eine generierte Annahme war) oder auch dem Programm
+	mitteilen, dass sie nicht stimmt (d.h. das Negat pinnen). Jede nicht gepinnte Annahme kann man als Frage an den Benutzer richten, zur Recherche
+	oder auch um zielgerichtet mit dem Sensemaker zu beweisen, dass sie wahr ist.
+	-
+	Reduzierte Annahmen und "Rettung" von Schlußfolgerungen: Weit entwickelte Matcher können sagen, dass sie einen Knoten gar nicht "komplett" als
+	Annahme brauchen, sondern nur eine schwächere Aussage. Also nicht A->B sondern A->A'->B, wobei der Matcher für A->B sich aus den Fingern saugt,
+	welche Aussage A' ausreichend wäre. Im Prinzip ist hier sowas wie eine temporäre private Matcher-Registry nötig: Das Matchen und Knoten
+	erzeugen funktioniert weiterhin genauso (vor allem, damit keine Vorgänger fehlen), aber es werden private Matcher eingesetzt, die man im
+	normalen Ablauf nicht haben will, weil sie dort nur unbrauchbare Knoten erzeugen würden. Auch ggf. für diesen einen Fall zugeschnittene
+	Matcher, die man normal nicht verwenden kann, weil man dazu eine unendlich große Zahl von Parametrisierten Matchern bräuchte.
+	Sinn ist die "Rettung" einer Schlußfolgerung, nachdem die Annahme widerlegt wurde: Wenn eine Annahme X zu A geführt hat, also
+	X -> ... -> A -> B, und X wird widerlegt, dann kann man mit der reduzierten Annahme A' evtl. eine schwächere Annahme Y finden, mit der B immer
+	noch folgt: X -> ... -> A -> A' -> B; X platzt, aber Y gilt, so das Y -> ... -> A' -> B. Dann ist B gerettet.
+	Beispiel: Wenn erkannt wird, dass es Reflection-Zugriffe auf private Felder gibt, sind viele Annahmen dahin. Wenn man aber zeigen kann,
+	dass das nur einzelne Klassen betrifft, dann kann statt der Annahme "kein Reflection-Zugriff auf private Felder" die schwächere Annahme
+	"kein Reflection-Zugriff auf private Felder dieser Klasse" genommen werden und die Schlußfolgerung ist gerettet.
+		--> dieser ganze Abschnitt ist Optimierung. Ohne das muss man im schlimmsten Fall einen Teilbaum immer wieder in ähnlicher Form
+			neu aufbauen, wegwerfen, ähnlich neu aufbauen etc.
+	-
+	Standardannahmen: Ein Satz von "üblichen" Annahmen sollte als Standard verfügbar sein, evtl. sogar als Default gelten. Damit lassen sich viele
+	Fälle abdecken, so dass das Tool überhaupt erst mal was erreicht. Im schlimmsten Fall muss man davon dann welche rausnehmen. Bsp.:
+		- kein Reflection-Zugriff auf private Felder
+		- kein Reflection-Zugriff auf private Konstruktoren
+		- keine nachträglich gebauten ClassLoader, keine Aufrufe von defineClass (-> Code ist vollständig bekannt; wird öfters platzen, aber hilft trotzdem erstmal)
+		- keine load-time-bytecode-manipulation o.ä., d.h. die Klassen entsprechen den Class Files
+		- kein custom boot class path, d.h. standardverhalten der Java class lib kann angenommen werden
+		- keine Manipulierte Virtual Machine (das macht als "Annahme" wenig Sinn, weil jede Java-Regel sie braucht -- wenn die VM manipuliert
+			wurde, kann keiner der Standardmatcher mehr funktionieren. Besser ist, per Definition zu sagen, dass das nicht mehr Java ist)
+
+Erkenntnisse:
+- classpath XYZ wird potentiell verwendet
+- Die Liste [...] enthält alle verwendeten Classpaths (kann aber ggf. welche enthalten, die nicht verwendet werden)
+- Klasse XYZ wird potentiell verwendet
+- Die Liste [...] enthält alle verwendeten Klassen (kann aber ggf. welche enthalten, die nicht verwendet werden)
+- Die Liste L = [...] besteht nur aus Subklassen der Klasse K und alle verwendeten Subklassen von K sind in L; es kann aber
+	sein, dass L Subklassen von K enthält, die nicht verwendet werden.
+	Bemerkung: Falls L=[], dann ist K effektiv final. Falls K formal final oder private ist, kann direkt L=[] festgestellt werden, ohne
+		andere Klassen anzusehen.
+- Die Liste L = [...] besteht nur aus Überschreibungen der Methode M (Klasse, Name, Signatur) und alle verwendeten Überschreibungen von M
+	sind in L; es kann aber sein, dass L Überschreibungen von M enthält, die nicht verwendet werden.
+	Bemerkung: Falls L=[], dann ist M effektiv final. Falls M formal final oder private ist, kann direkt L=[] festgestellt werden, ohne
+		andere Klassen anzusehen.
+- Es gibt nur eine Implementierung von Interface I.
+- Es gibt nur eine Implementierung von der abstrakten Methode (auch Interface-Methode) M.
+- Klasse K wird nicht instanziiert.
+- Klasse K wird nicht verwendet.
+- Methode M wird nicht verwendet.
+- Klasse K ist immutable (thread-safe durch final fields oder thread-unsafe).
+- Klasse K überschreibt equals / hashCode
+- Klasse K überschreibt nur equals oder nur hashCode
+- Klasse K ist eine Sammlung statischer Methoden (enthält min. 1 statische Methode; wird nicht instanziiert; keine nichtstatischen Member)
+- Methode M liefert immer denselben Returnwert (der aber ein mutable object sein kann)
+- Methode M entspricht einer Konstanten (liefert immer denselben Wert; dieser ist ein Primitivwert, null oder immutable)
+- Methode M hat maximal die folgenden Seiteneffekte: [...]
+- Methode M liest maximal die folgenden externen Variablen: [...]
+- Methode M kann durch folgenden Kontrollflussgraphen dargestellt werden
+	- reduziert durch frühere Erkenntnisse und Annahmen
+	- zunehmend mit highlevel nodes (und diese können durch Plugins beigesteuert werden)
+	- jede Transformation des CFG kann erklärt werden
+
+Zusätzlich zu Annahmen und Erkenntnissen sollte es möglich sein, gezielte Fragen zu stellen. Diese verwerten dann die Erkenntnisse.
+- Wie kann ein Aufruf von Methode M ablaufen?
+	-> das kann nur beantwortet werden, wenn als Annahme feststeht, dass M verwendet wird. Ansonsten wird der ganze Schlußfolgerungscode
+		falsche Ergebnisse liefern. Z.B. wird, wenn M nicht verwendet wird, eine aufgerufene Methode N "zusammengekürzt", weil stärkere
+		Annahmen über deren Parameter gemacht werden können. Wenn diese gekürzte Variante dann doch für M benutzt wird, gibt es falsche
+		Ergebnisse.
+- Auf welchen Wegen ist Stelle X im Code erreichbar?
+	- verfolgt die Ausführungspfade rückwärts
+- UML-like Klassendiagramm
+- Datenbankdiagramm (auf Basis von Constraints, mit dem Hintergedanken dass man diese umgehen kann)
+	--> Annahme in den Default-Annahmen: Constraints werden respektiert
+
