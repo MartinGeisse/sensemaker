@@ -324,27 +324,28 @@ Zusätzlich zu Annahmen und Erkenntnissen sollte es möglich sein, gezielte Frag
 - Datenbankdiagramm (auf Basis von Constraints, mit dem Hintergedanken dass man diese umgehen kann)
 	--> Annahme in den Default-Annahmen: Constraints werden respektiert
 
-Idee: Das Ganze erst mal für Javascript (oder Webseiten als HTML + JS + CSS) umsetzen; da gibt es weniger Variationen als in Java-Projekten;
-	die Sprache ist simpler	und Kontrollfluss kann man genauso analysieren.
-	Erst mal nur JS, und die Möglichkeit eine HTML-Datei zu verlinken, so dass alle deren JS-Scripte analysiert werden.
-	-
-	Vieles, was wichtig ist, kann man dort schon umsetzen:
-	- grundsätzlicher Arbeitsablauf, Benutzerinteraktion, Präsentation von Ergebnissen
-	- sauberen Code wieder ausgeben (high-level formatter)
-	- Analyse von Code ohne statische Typangaben (ist leider für Legacy-Java-Code aus der schmutzigen Praxis auch an vielen Stellen wichtig;
-		wenn das in JS funzt, dann in Java erst recht)
-	- Variablen trennen: Minified JS kann Variablen "wiederverwenden", um sich ein "var" zu sparen, aber logisch sind es verschiedene Variablen
-	- Automatisch mit Buchstaben benannte Variablen umbenennen (z.B. foo_<alterName>). Das verdeutlicht, dass deren Bedeutung noch unbekannt ist
-		und man kann außerdem z.B. i,j,k für Zählvariablen, x,y,z für Koordinaten, s für "beliebige" Strings usw. verwenden.
-	- for-Schleifen-erkennung (dazu notfalls die Initialisierung nach unten verschieben, bis sie direkt an der Schleife steht -- in minJS
-		sind da teilweise die init-statements vertauscht
-	- boolean operator nach if umwandeln
-	- offensichtliche Seiteneffekte aus conditions raus
-	- aggressive Erkennung von unused code (globale Optimierung unter berücksichtigung aller beteiligter JS-Dateien --> kann aber gerade
-		dort auch irreführend sein, weil Webseiten ja oft Code nachladen und deshalb das Gesamtbild i.A. nicht vollständig ist)
-	Zusätzlich geht:
-	- ineraktiv: Wenn ein Objekt bestimmte Methoden und Felder unterstützt, dann kann der Benutzer diesem einen Begriff geben (Default-Name)
+Begriffe:
+- Assertion (=Aussage) -- aber blöd, weil der Begriff schon anderweitig verwendet wird; Deduction; consequence; entailment; conclusion
+	= premises (Vorgängerknoten) / Assumptions (blöd; Annahmen haben hier eine andere Bedeutung) + AssertionBody (auch: consequence; entailment; conclusion)
+- AssertionBody 
+-> Deduction ist gut als Begriff für den gesamten Knoten; premises für die Voraussetzung; consequence oder conclusion für das Ergebnis. 
+Problem 1: Die Rechte Seite heißt so wie das ganze
+Problem 2: Als "premises" werden Schlußfolgerungen verlinkt, aber die Voraussetzung ist deren rechte Seite!
 -->
-	Diese Idee hat einen entscheidenden Nachteil: Bei JS ist wie o.g. der Code nie vollständig -- es kann immer etwas vom Webserver nachgeladen
-	werden (ausgenommen Seiten komplett ohne nachlade-Logik, aber die sind eh "harmlos" was die Komplexität angeht). Deshalb wird die
-	Analyse dort auch immer im Ansatz steckenbleiben.  
+Besser wären Begriffe, die Aussagen / Erkenntnisse und nicht Schlußfolgerungen bezeichnen.
+- "Finding" <- das bezeichnet am besten den "Body". Der Knotenkopf sollte einen besser passenden Namen haben.
+	-> "Basis" für die Voraussetzung? "Premises" wäre hier aber auch OK
+	-> Auch mit o.g. Wording-Problemen ist "Deduction" OK für den Knotenkopf 
+	"Discovery" wäre für den Knotenkopf gut.
+-> Discovery = Basis + Finding
+nee, lieber Deduction = Premises + Conclusion. Auch wenn als Premises ganze Deduction-Objekte verlinkt sind, obwohl eigentlich nur deren Conclusion
+	die Voraussetzung sind. Auch können Annahmen auf der linken Seite stehen -- am besten ist dazu (Deduction, Assumption) implements Premise.
+---
+Andere überlegung: Die Schlußfolgerungskette ist doch Sache der Engine. Für die Pattern Matcher ist nur relevant, welche Aussagen aktuell als wahr
+angenommen werden können. --> Interface "Finding" ist nach außen sichtbar, dazu die Engine-Interfaces, alles andere ist intern.
+- Finding (user-implemented)
+- Rule (engine-implemented); standard: rule = pattern + deducer
+- Pattern (engine-/user-implemented): es werden bestimmte Patterns optimiert unterstützt, aber custom impl. sind möglich
+- Deducer (user-implemented): Finding[] -> Finding[]
+- Engine (für den Aufruf aus der Main) --> Engine ist blöd, eher sowas wie "Controller"
+* "Database" ist nicht verfügbar, da Teil des Konzepts ist, dass keine beliebigen Findings abgerufen werden können. 
