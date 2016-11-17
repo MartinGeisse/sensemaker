@@ -1,8 +1,7 @@
 package name.martingeisse.sensemaker.plugins.java;
 
-import name.martingeisse.sensemaker.core.Database;
-import name.martingeisse.sensemaker.core.ItemKey;
-import org.apache.commons.lang3.builder.EqualsBuilder;
+import name.martingeisse.sensemaker.old_core.Database;
+import name.martingeisse.sensemaker.old_core.ItemKey;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.util.*;

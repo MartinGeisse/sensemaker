@@ -1,6 +1,6 @@
 package name.martingeisse.sensemaker.plugins.file;
 
-import name.martingeisse.sensemaker.core.ItemProvider;
+import name.martingeisse.sensemaker.old_core.ItemProvider;
 import name.martingeisse.sensemaker.core.Plugin;
 
 /**

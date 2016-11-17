@@ -1,7 +1,6 @@
 package name.martingeisse.sensemaker.plugins.java;
 
-import name.martingeisse.sensemaker.core.ItemKey;
-import name.martingeisse.sensemaker.plugins.file.FileStatisticsKey;
+import name.martingeisse.sensemaker.old_core.ItemKey;
 
 import java.util.List;
 

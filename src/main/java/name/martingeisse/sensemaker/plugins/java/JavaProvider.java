@@ -1,9 +1,9 @@
 package name.martingeisse.sensemaker.plugins.java;
 
 import com.google.inject.Inject;
-import name.martingeisse.sensemaker.core.Database;
-import name.martingeisse.sensemaker.core.ItemKey;
-import name.martingeisse.sensemaker.core.ItemProvider;
+import name.martingeisse.sensemaker.old_core.Database;
+import name.martingeisse.sensemaker.old_core.ItemKey;
+import name.martingeisse.sensemaker.old_core.ItemProvider;
 import name.martingeisse.sensemaker.util.UnexpectedExceptionException;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;

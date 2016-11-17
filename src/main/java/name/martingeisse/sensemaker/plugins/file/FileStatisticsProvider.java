@@ -1,7 +1,7 @@
 package name.martingeisse.sensemaker.plugins.file;
 
-import name.martingeisse.sensemaker.core.ItemKey;
-import name.martingeisse.sensemaker.core.ItemProvider;
+import name.martingeisse.sensemaker.old_core.ItemKey;
+import name.martingeisse.sensemaker.old_core.ItemProvider;
 
 import java.io.File;
 

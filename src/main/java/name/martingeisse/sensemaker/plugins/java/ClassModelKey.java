@@ -1,7 +1,6 @@
 package name.martingeisse.sensemaker.plugins.java;
 
-import name.martingeisse.sensemaker.core.ItemKey;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
+import name.martingeisse.sensemaker.old_core.ItemKey;
 
 /**
  *

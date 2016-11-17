@@ -2,7 +2,7 @@ package name.martingeisse.sensemaker;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import name.martingeisse.sensemaker.core.Database;
+import name.martingeisse.sensemaker.old_core.Database;
 import name.martingeisse.sensemaker.plugins.PluginList;
 import name.martingeisse.sensemaker.plugins.file.FileStatisticsKey;
 import name.martingeisse.sensemaker.plugins.java.AllClassModelsKey;
